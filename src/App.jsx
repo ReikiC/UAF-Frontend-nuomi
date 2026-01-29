@@ -4,9 +4,7 @@ import './App.css';
 
 const API_ENDPOINTS = {
   smart: '/api/v1/chat',
-  basic: '/api/v1/chat/basic',
-  stream: '/api/v1/chat/stream',
-  basicStream: '/api/v1/chat/basic/stream'
+  basic: '/api/v1/chat/basic'
 };
 
 function App() {
@@ -34,39 +32,12 @@ function App() {
     setLoading(true);
 
     try {
-      if (currentApi === 'stream' || currentApi === 'basicStream') {
-        // 流式处理
-        const response = await fetch(API_ENDPOINTS[currentApi], {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(userMessage)
-        });
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let assistantMessage = '';
-
-        setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          assistantMessage += decoder.decode(value);
-          setMessages(prev => {
-            const newMessages = [...prev];
-            newMessages[newMessages.length - 1].content = assistantMessage;
-            return newMessages;
-          });
-        }
-      } else {
-        // 普通请求
-        const { data } = await axios.post(
-          API_ENDPOINTS[currentApi],
-          userMessage,
-          { headers: { 'Content-Type': 'application/json' } }
-        );
-        setMessages(prev => [...prev, { role: 'assistant', content: data.message || data }]);
-      }
+      const { data } = await axios.post(
+        API_ENDPOINTS[currentApi],
+        userMessage,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      setMessages(prev => [...prev, { role: 'assistant', content: data.message || data }]);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Error: ' + error.message }]);
     }
@@ -78,8 +49,6 @@ function App() {
     switch (key) {
       case 'smart': return '智能聊天';
       case 'basic': return '基础聊天';
-      case 'stream': return '流式聊天';
-      case 'basicStream': return '基础流式';
       default: return key;
     }
   };
@@ -108,7 +77,7 @@ function App() {
 
       {/* API 切换按钮 */}
       <div className="api-selector">
-        {Object.entries(API_ENDPOINTS).map(([key, endpoint]) => (
+        {Object.entries(API_ENDPOINTS).map(([key]) => (
           <button
             key={key}
             className={currentApi === key ? 'active' : ''}
