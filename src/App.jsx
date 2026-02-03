@@ -31,7 +31,7 @@ function App() {
       const response = await sendChatMessage(API_ENDPOINTS[currentApi], userMessage);
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: response }
+        { role: 'assistant', content: response.content, steps: response.steps }
       ]);
     } catch (error) {
       setMessages(prev => [
