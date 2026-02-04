@@ -67,34 +67,72 @@ body {
 /* API 选择器 */
 .api-selector {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   padding: 20px 30px;
   border-bottom: 1px solid #e5e7eb;
   background: white;
 }
 
-.api-selector button {
-  padding: 10px 20px;
+.api-selector-dropdown {
+  width: 100%;
+  padding: 12px 16px;
   border: 2px solid #e5e7eb;
   background: white;
   cursor: pointer;
-  border-radius: 20px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 500;
-  color: #4b5563;
+  color: #374151;
   transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
 }
 
-.api-selector button:hover {
+.api-selector-dropdown:hover {
   border-color: #4A90E2;
-  color: #4A90E2;
 }
 
-.api-selector button.active {
-  background: #4A90E2;
-  color: white;
+.api-selector-dropdown:focus {
+  outline: none;
   border-color: #4A90E2;
-  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.api-selector-description {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #6b7280;
+  padding-left: 4px;
+}
+
+.api-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.api-badge.streaming {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.api-selector-loading,
+.api-selector-error {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.api-selector-error {
+  color: #ef4444;
 }
 
 /* 消息区域 */
@@ -218,6 +256,19 @@ body {
   50% {
     opacity: 1;
   }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tool-call-status[style*="#f59e0b"] {
+  animation: spin 1s linear infinite;
 }
 
 /* 输入区域 */

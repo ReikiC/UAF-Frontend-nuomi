@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { ChatMessage } from './ChatMessage';
 import { Avatar } from './Avatar';
 
-export const MessageList = ({ messages, loading }) => {
+export const MessageList = ({ messages, loading, isStreaming = false }) => {
   const messagesEndRef = useRef(null);
 
   // Move scroll logic directly to where it's needed
@@ -23,7 +23,7 @@ export const MessageList = ({ messages, loading }) => {
           <ChatMessage key={idx} message={msg} />
         ))
       )}
-      {loading && (
+      {loading && !isStreaming && (
         <div className="message assistant">
           <Avatar type="assistant" />
           <div className="message-content">

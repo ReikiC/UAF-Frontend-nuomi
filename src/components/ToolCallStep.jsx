@@ -6,14 +6,15 @@ import { useState } from 'react';
  * @param {string} props.tool_name - Name of the tool
  * @param {Object.<string, any>} props.arguments - Tool arguments
  * @param {string} props.result - Tool execution result
- * @param {'success' | 'error'} props.status - Execution status
+ * @param {'success' | 'error' | 'running'} props.status - Execution status
  */
 export const ToolCallStep = ({ tool_name, arguments: args, result, status }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isResultExpanded, setIsResultExpanded] = useState(false);
 
-  const statusColor = status === 'success' ? '#10b981' : '#ef4444';
-  const statusIcon = status === 'success' ? '✓' : '✕';
+  const statusColor = status === 'success' ? '#10b981' : status === 'running' ? '#f59e0b' : '#ef4444';
+  const statusIcon = status === 'success' ? '✓' : status === 'running' ? '⟳' : '✕';
+  const statusText = status === 'running' ? '执行中' : status;
 
   // Format JSON for display
   const formatJson = (obj) => {
@@ -37,7 +38,7 @@ export const ToolCallStep = ({ tool_name, arguments: args, result, status }) => 
           className="tool-call-status"
           style={{ color: statusColor, marginLeft: 'auto' }}
         >
-          {statusIcon} {status}
+          {statusIcon} {statusText}
         </span>
       </div>
 
