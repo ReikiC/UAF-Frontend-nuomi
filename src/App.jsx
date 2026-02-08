@@ -9,7 +9,7 @@ import { MessageList } from './components/MessageList';
 import { MessageInput } from './components/MessageInput';
 
 // API client with proper error handling
-import { sendChatMessage, sendChatMessageStream, fetchApiEndpoints } from './lib/api';
+import { sendChatMessage, sendChatMessageStream, fetchApiEndpoints, cancelTask, continueTask } from './lib/api';
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -18,6 +18,14 @@ function App() {
   const [endpoints, setEndpoints] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isStreamingMode, setIsStreamingMode] = useState(false);
+
+  // Task and session state for v2 API
+  const [currentTaskId, setCurrentTaskId] = useState(null);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [canContinue, setCanContinue] = useState(false);
+
+  // Track if current streaming request should use session_id
+  const [sessionIdForRequest, setSessionIdForRequest] = useState(null);
 
   // Load endpoints on mount
   useEffect(() => {
@@ -38,6 +46,7 @@ function App() {
     setInput(''); // Clear input first for better UX
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
+    setCanContinue(false); // Reset continue state on new message
 
     // Get endpoint metadata
     const endpointMeta = endpoints?.[currentApi];
@@ -52,8 +61,19 @@ function App() {
 
     try {
       if (isStreaming) {
+        // Build request body (include session_id if available)
+        const requestBody = sessionIdForRequest
+          ? { message: userMessage, session_id: sessionIdForRequest }
+          : userMessage;
+
         // Streaming API
-        await sendChatMessageStream(endpointPath, userMessage, {
+        await sendChatMessageStream(endpointPath, requestBody, {
+          onTaskCreated: (taskId, sessionId) => {
+            console.log('Task created:', taskId, 'Session:', sessionId);
+            setCurrentTaskId(taskId);
+            setCurrentSessionId(sessionId);
+            setSessionIdForRequest(sessionId); // Use for future requests
+          },
           onToolCallStart: (toolName, args) => {
             setMessages(prev => {
               const lastMsg = prev[prev.length - 1];
@@ -100,9 +120,16 @@ function App() {
               ];
             });
           },
+          onCancelled: (taskId, reason) => {
+            console.log('Task cancelled:', taskId, 'Reason:', reason);
+            setCanContinue(true);
+            setLoading(false);
+            setIsStreamingMode(false);
+          },
           onDone: () => {
             setLoading(false);
             setIsStreamingMode(false);
+            setCurrentTaskId(null);
           }
         });
       } else {
@@ -141,7 +168,7 @@ function App() {
         setIsStreamingMode(false);
       }
     }
-  }, [input, currentApi]);
+  }, [input, currentApi, endpoints, sessionIdForRequest]);
 
   const handleApiChange = useCallback((api) => {
     setCurrentApi(api);
@@ -150,6 +177,118 @@ function App() {
   const handleInputChange = useCallback((value) => {
     setInput(value);
   }, []);
+
+  // Cancel current task
+  const handleCancel = useCallback(async () => {
+    if (!currentTaskId) return;
+
+    try {
+      await cancelTask(currentTaskId);
+      // Note: onCancelled callback will handle state updates
+    } catch (error) {
+      console.error('Cancel failed:', error);
+      // Fallback: update UI anyway
+      setCanContinue(true);
+      setLoading(false);
+      setIsStreamingMode(false);
+    }
+  }, [currentTaskId]);
+
+  // Continue cancelled task
+  const handleContinue = useCallback(async () => {
+    if (!currentTaskId) return;
+
+    setLoading(true);
+    setCanContinue(false);
+
+    // Add user instruction message
+    setMessages(prev => [...prev, { role: 'user', content: '[继续]' }]);
+
+    // Add empty assistant message for streaming
+    setMessages(prev => [...prev, { role: 'assistant', content: '', steps: [] }]);
+    setIsStreamingMode(true);
+
+    try {
+      await continueTask(currentTaskId, '请继续', {
+        onTaskCreated: (newTaskId, sessionId) => {
+          console.log('Continue task created:', newTaskId, 'Session:', sessionId);
+          setCurrentTaskId(newTaskId);
+          setCurrentSessionId(sessionId);
+          setSessionIdForRequest(sessionId);
+        },
+        onToolCallStart: (toolName, args) => {
+          setMessages(prev => {
+            const lastMsg = prev[prev.length - 1];
+            const newStep = { tool_name: toolName, arguments: args, result: null, status: 'running' };
+            return [
+              ...prev.slice(0, -1),
+              {
+                ...lastMsg,
+                steps: [...(lastMsg.steps || []), newStep]
+              }
+            ];
+          });
+        },
+        onToolCallEnd: (toolName, result, status) => {
+          setMessages(prev => {
+            const lastMsg = prev[prev.length - 1];
+            const steps = lastMsg.steps || [];
+            const stepIndex = steps.findIndex(s => s.tool_name === toolName && s.status === 'running');
+
+            if (stepIndex === -1) return prev;
+
+            return [
+              ...prev.slice(0, -1),
+              {
+                ...lastMsg,
+                steps: [
+                  ...steps.slice(0, stepIndex),
+                  { ...steps[stepIndex], result, status },
+                  ...steps.slice(stepIndex + 1)
+                ]
+              }
+            ];
+          });
+        },
+        onContentDelta: (content) => {
+          setMessages(prev => {
+            const lastMsg = prev[prev.length - 1];
+            return [
+              ...prev.slice(0, -1),
+              {
+                ...lastMsg,
+                content: lastMsg.content + content
+              }
+            ];
+          });
+        },
+        onCancelled: (taskId, reason) => {
+          console.log('Continue task cancelled:', taskId);
+          setCanContinue(true);
+          setLoading(false);
+          setIsStreamingMode(false);
+        },
+        onDone: () => {
+          setLoading(false);
+          setIsStreamingMode(false);
+        }
+      });
+    } catch (error) {
+      console.error('Continue failed:', error);
+      setIsStreamingMode(false);
+      setMessages(prev => {
+        const lastMsg = prev[prev.length - 1];
+        return [
+          ...prev.slice(0, -1),
+          {
+            ...lastMsg,
+            content: 'Error: ' + error.message
+          }
+        ];
+      });
+      setLoading(false);
+    }
+  }, [currentTaskId]);
 
   return (
     <div className="chat-container">
@@ -160,7 +299,11 @@ function App() {
         input={input}
         onInputChange={handleInputChange}
         onSend={sendMessage}
+        onCancel={handleCancel}
+        onContinue={handleContinue}
         loading={loading}
+        isStreaming={isStreamingMode}
+        canContinue={canContinue}
       />
     </div>
   );

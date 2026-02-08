@@ -57,11 +57,13 @@ export const sendChatMessage = async (endpoint, message) => {
 /**
  * Send a chat message with streaming response
  * @param {string} endpoint - The API endpoint path
- * @param {string} message - The user message
+ * @param {string} message - The user message (or object with message and session_id)
  * @param {Object} callbacks - Event callbacks
+ * @param {Function} callbacks.onTaskCreated - Called when task is created (v2 only)
  * @param {Function} callbacks.onToolCallStart - Called when a tool call starts
  * @param {Function} callbacks.onToolCallEnd - Called when a tool call ends
  * @param {Function} callbacks.onContentDelta - Called when content chunks arrive
+ * @param {Function} callbacks.onCancelled - Called when task is cancelled (v2 only)
  * @param {Function} callbacks.onDone - Called when streaming completes
  * @returns {Promise<void>}
  */
@@ -132,6 +134,10 @@ export const sendChatMessageStream = async (endpoint, message, callbacks) => {
             }
 
             switch (eventType) {
+              case 'task_created':
+                console.log('[SSE] task_created:', data);
+                callbacks.onTaskCreated?.(data.task_id, data.session_id);
+                break;
               case 'tool_call_start':
                 console.log('[SSE] tool_call_start:', data);
                 callbacks.onToolCallStart?.(data.tool_name, data.arguments);
@@ -143,6 +149,10 @@ export const sendChatMessageStream = async (endpoint, message, callbacks) => {
               case 'content_delta':
                 console.log('[SSE] content_delta:', data);
                 callbacks.onContentDelta?.(data.content);
+                break;
+              case 'cancelled':
+                console.log('[SSE] cancelled:', data);
+                callbacks.onCancelled?.(data.task_id, data.reason);
                 break;
               case 'done':
                 console.log('[SSE] done:', data);
@@ -192,5 +202,117 @@ export const fetchApiEndpoints = async () => {
       },
       default: 'fallback'
     };
+  }
+};
+
+/**
+ * Cancel a running task
+ * @param {string} taskId - The task ID to cancel
+ * @returns {Promise<void>}
+ */
+export const cancelTask = async (taskId) => {
+  try {
+    await apiClient.delete(`/api/v1/chat/task/${taskId}`);
+  } catch (error) {
+    if (error.response?.status === 404) {
+      throw new Error('任务不存在或已完成');
+    }
+    throw new Error(error.response?.data?.detail || '取消任务失败');
+  }
+};
+
+/**
+ * Continue a cancelled task
+ * @param {string} taskId - The task ID to continue
+ * @param {string} instruction - Instruction for continuation (default: "请继续")
+ * @param {Object} callbacks - Event callbacks (same as sendChatMessageStream)
+ * @returns {Promise<void>}
+ */
+export const continueTask = async (taskId, instruction = '请继续', callbacks) => {
+  const url = `${API_BASE_URL}/api/v1/chat/continue/${taskId}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(instruction),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Server error: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let currentEventType = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine || trimmedLine.startsWith(':')) continue;
+
+        const eventMatch = trimmedLine.match(/^event:\s*(.+)$/);
+        const dataMatch = trimmedLine.match(/^data:\s*(.+)$/);
+
+        if (eventMatch) {
+          currentEventType = eventMatch[1].trim();
+          continue;
+        }
+
+        if (dataMatch) {
+          try {
+            const data = JSON.parse(dataMatch[1]);
+            let eventType = currentEventType;
+
+            switch (eventType) {
+              case 'task_created':
+                console.log('[SSE] task_created:', data);
+                callbacks.onTaskCreated?.(data.task_id, data.session_id);
+                break;
+              case 'tool_call_start':
+                console.log('[SSE] tool_call_start:', data);
+                callbacks.onToolCallStart?.(data.tool_name, data.arguments);
+                break;
+              case 'tool_call_end':
+                console.log('[SSE] tool_call_end:', data);
+                callbacks.onToolCallEnd?.(data.tool_name, data.result, data.status);
+                break;
+              case 'content_delta':
+                console.log('[SSE] content_delta:', data);
+                callbacks.onContentDelta?.(data.content);
+                break;
+              case 'cancelled':
+                console.log('[SSE] cancelled:', data);
+                callbacks.onCancelled?.(data.task_id, data.reason);
+                break;
+              case 'done':
+                console.log('[SSE] done:', data);
+                callbacks.onDone?.();
+                break;
+            }
+
+            currentEventType = null;
+          } catch (e) {
+            console.error('Failed to parse SSE data:', dataMatch[1], e);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    if (error.response?.status === 404) {
+      throw new Error('任务不存在');
+    }
+    throw new Error(error.message || '继续任务失败');
   }
 };

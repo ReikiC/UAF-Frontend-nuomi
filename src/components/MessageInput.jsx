@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const MessageInput = ({ input, onInputChange, onSend, loading }) => {
+export const MessageInput = ({ input, onInputChange, onSend, onCancel, onContinue, loading, isStreaming, canContinue }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSend();
@@ -15,7 +15,9 @@ export const MessageInput = ({ input, onInputChange, onSend, loading }) => {
 
   // Use explicit conditional rendering instead of &&
   // See: rendering-conditional-render
-  const isDisabled = loading || !input.trim();
+  const isSendDisabled = loading || !input.trim();
+  const showCancel = isStreaming && loading;
+  const showContinue = canContinue && !loading;
 
   return (
     <form className="input-area" onSubmit={handleSubmit}>
@@ -26,9 +28,26 @@ export const MessageInput = ({ input, onInputChange, onSend, loading }) => {
         placeholder="输入消息..."
         disabled={loading}
       />
-      <button type="submit" disabled={isDisabled}>
-        {loading ? '发送中...' : '发送'}
-      </button>
+      <div className="button-group">
+        {/* Cancel button */}
+        {showCancel && (
+          <button type="button" onClick={onCancel} className="cancel-button">
+            停止
+          </button>
+        )}
+
+        {/* Continue button */}
+        {showContinue && (
+          <button type="button" onClick={onContinue} className="continue-button">
+            继续
+          </button>
+        )}
+
+        {/* Send button */}
+        <button type="submit" disabled={isSendDisabled} className="send-button">
+          {loading ? '发送中...' : '发送'}
+        </button>
+      </div>
     </form>
   );
 };
