@@ -50,3 +50,10 @@ uv.lock
 
 # macOS
 .DS_Store
+
+# Claude
+.claude
+
+# Node.js
+node_modules/
+dist/
