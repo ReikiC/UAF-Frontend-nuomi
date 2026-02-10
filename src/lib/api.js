@@ -20,7 +20,13 @@ const apiClient = axios.create({
  */
 export const sendChatMessage = async (endpoint, message) => {
   try {
-    const { data } = await apiClient.post(endpoint, message);
+    // Auto-wrap string messages into JSON object for backend compatibility
+    // Backend expects {message: "..."} format with Body(..., embed=True)
+    const requestBody = typeof message === 'string'
+      ? { message: message }
+      : message;
+
+    const { data } = await apiClient.post(endpoint, requestBody);
 
     // Handle new structured response format (from /api/v1/chat)
     if (data.final_message !== undefined) {
@@ -71,12 +77,18 @@ export const sendChatMessageStream = async (endpoint, message, callbacks) => {
   const url = `${API_BASE_URL}${endpoint}`;
 
   try {
+    // Auto-wrap string messages into JSON object for backend compatibility
+    // Backend expects {message: "..."} format with Body(..., embed=True)
+    const requestBody = typeof message === 'string'
+      ? { message: message }
+      : message;
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(message),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -232,12 +244,18 @@ export const continueTask = async (taskId, instruction = '请继续', callbacks)
   const url = `${API_BASE_URL}/api/v1/chat/continue/${taskId}`;
 
   try {
+    // Auto-wrap string instruction into JSON object for backend compatibility
+    // Backend expects {message: "..."} format with Body(..., embed=True)
+    const requestBody = typeof instruction === 'string'
+      ? { message: instruction }
+      : instruction;
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(instruction),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
