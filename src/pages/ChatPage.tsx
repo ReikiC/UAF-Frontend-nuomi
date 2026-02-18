@@ -29,13 +29,36 @@ export function ChatPage() {
   const loadSessionMessages = async (id: string) => {
     try {
       const session = await sessionsService.getSession(id);
+      console.log('Loading session messages:', session.messages);
       chatStore.setState({
-        messages: session.messages.map((msg) => ({
-          id: msg.id,
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content,
-          created_at: msg.created_at,
-        })),
+        messages: session.messages.map((msg) => {
+          console.log('Processing message:', msg.id, 'tool_calls:', msg.tool_calls);
+          const message: any = {
+            id: msg.id,
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+            created_at: msg.created_at,
+          };
+
+          // Convert tool_calls from dict to array if needed
+          if (msg.tool_calls) {
+            if (Array.isArray(msg.tool_calls)) {
+              message.tool_calls = msg.tool_calls;
+            } else {
+              // Convert dict to array format
+              message.tool_calls = Object.values(msg.tool_calls).map((tc: any) => ({
+                tool_name: tc.tool_name,
+                arguments: tc.arguments,
+                result: tc.result,
+                status: tc.status || 'success',
+                timestamp: tc.timestamp || new Date().toISOString(),
+              }));
+            }
+            console.log('Converted tool_calls:', message.tool_calls);
+          }
+
+          return message;
+        }),
       });
       setCurrentSessionTitle(session.title || '');
     } catch (error) {

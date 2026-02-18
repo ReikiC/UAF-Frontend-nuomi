@@ -79,9 +79,81 @@ function MessageBubble({ message, isStreaming }: { message: Message; isStreaming
           {isUser ? (
             <p className="whitespace-pre-wrap break-words">{message.content}</p>
           ) : (
-            <div className="markdown-content prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown>{message.content + (isStreaming ? '▌' : '')}</ReactMarkdown>
-            </div>
+            <>
+              {/* Tool calls */}
+              {message.tool_calls && message.tool_calls.length > 0 && (
+                <div className="space-y-1.5 mb-3">
+                  {message.tool_calls.map((toolCall, index) => (
+                    <details
+                      key={index}
+                      className="group"
+                    >
+                      <summary className="cursor-pointer flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        {/* Toggle icon */}
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3 group-open:rotate-90 transition-transform">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+
+                        {/* Status icon */}
+                        {toolCall.status === 'running' && (
+                          <div className="w-3 h-3 border-2 border-primary/60 border-t-transparent rounded-full animate-spin" />
+                        )}
+                        {toolCall.status === 'success' && (
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3 text-green-600 dark:text-green-400">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
+                        {toolCall.status === 'error' && (
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3 text-red-600 dark:text-red-400">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                          </svg>
+                        )}
+
+                        {/* Tool name and status */}
+                        <span className="font-medium">{toolCall.tool_name}</span>
+                        <span className={cn(
+                          "text-xs",
+                          toolCall.status === 'running' && "text-primary",
+                          toolCall.status === 'success' && "text-green-600 dark:text-green-400",
+                          toolCall.status === 'error' && "text-red-600 dark:text-red-400"
+                        )}>
+                          · {toolCall.status === 'running' && '调用中'}
+                          {toolCall.status === 'success' && '已完成'}
+                          {toolCall.status === 'error' && '失败'}
+                        </span>
+                      </summary>
+
+                      {/* Collapsible content */}
+                      <div className="ml-5 mt-1.5 space-y-1.5 text-xs">
+                        {/* Arguments */}
+                        {toolCall.arguments && Object.keys(toolCall.arguments).length > 0 && (
+                          <div>
+                            <div className="text-muted-foreground mb-1">参数</div>
+                            <pre className="bg-background/50 rounded p-2 overflow-x-auto border border-border/50">
+                              {JSON.stringify(toolCall.arguments, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+
+                        {/* Result */}
+                        {toolCall.result && toolCall.status !== 'running' && (
+                          <div>
+                            <div className="text-muted-foreground mb-1">结果</div>
+                            <pre className="bg-background/50 rounded p-2 overflow-x-auto border border-border/50 whitespace-pre-wrap">
+                              {toolCall.result}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              )}
+              {/* Message content */}
+              <div className="markdown-content prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown>{message.content + (isStreaming ? '▌' : '')}</ReactMarkdown>
+              </div>
+            </>
           )}
           <p className={cn('text-xs mt-1 opacity-70', isUser ? 'text-primary-foreground' : 'text-secondary-foreground')}>
             {formatTime(message.created_at)}

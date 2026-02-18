@@ -104,24 +104,30 @@ export function useChat() {
           buffer = lines.pop() || '';
 
           let currentEvent = '';
+          let currentData = '';
 
           for (const line of lines) {
             if (line.startsWith('event: ')) {
               // Extract event type
               currentEvent = line.slice(7).trim();
+              console.log('SSE event type:', currentEvent);
             } else if (line.startsWith('data: ')) {
+              // Extract data
+              currentData = line.slice(6).trim();
+              console.log('SSE data:', currentData);
               try {
-                const data = JSON.parse(line.slice(6));
+                const data = JSON.parse(currentData);
                 // Add event type to data object
                 const eventData = { event: currentEvent, ...data };
                 handleSSEEvent(eventData);
+                currentData = '';
               } catch (e) {
                 console.error('Failed to parse SSE data:', e, line);
               }
-            }
-            // Reset event after processing data
-            if (line.trim() === '') {
+            } else if (line.trim() === '') {
+              // Empty line marks end of event
               currentEvent = '';
+              currentData = '';
             }
           }
         }
@@ -173,12 +179,52 @@ export function useChat() {
       case 'tool_call_start': {
         const data = event as ToolCallStartData;
         console.log('Tool call started:', data.tool_name, data.arguments);
+        // Add tool call to message
+        chatStore.setState((prev) => {
+          const messages = [...prev.messages];
+          const lastMessage = messages[messages.length - 1];
+          if (lastMessage && lastMessage.role === 'assistant') {
+            const toolCall = {
+              tool_name: data.tool_name,
+              arguments: data.arguments,
+              status: 'running' as const,
+              timestamp: new Date().toISOString(),
+            };
+            messages[messages.length - 1] = {
+              ...lastMessage,
+              tool_calls: [...(lastMessage.tool_calls || []), toolCall],
+            };
+          }
+          return { messages };
+        });
         break;
       }
 
       case 'tool_call_end': {
         const data = event as ToolCallEndData;
         console.log('Tool call ended:', data.tool_name, data.status);
+        // Update tool call status
+        chatStore.setState((prev) => {
+          const messages = [...prev.messages];
+          const lastMessage = messages[messages.length - 1];
+          if (lastMessage && lastMessage.role === 'assistant' && lastMessage.tool_calls) {
+            const toolCalls = [...lastMessage.tool_calls];
+            const lastToolCall = toolCalls[toolCalls.length - 1];
+            if (lastToolCall && lastToolCall.tool_name === data.tool_name && lastToolCall.status === 'running') {
+              toolCalls[toolCalls.length - 1] = {
+                ...lastToolCall,
+                status: data.status as 'success' | 'error',
+                result: data.result,
+                timestamp: new Date().toISOString(),
+              };
+            }
+            messages[messages.length - 1] = {
+              ...lastMessage,
+              tool_calls: toolCalls,
+            };
+          }
+          return { messages };
+        });
         break;
       }
 
