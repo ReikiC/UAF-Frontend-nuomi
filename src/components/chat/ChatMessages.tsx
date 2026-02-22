@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -15,17 +15,80 @@ interface ChatMessagesProps {
 export function ChatMessages({ messages, isStreaming = false }: ChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isUserScrolledRef = useRef(false);
+  const prevIsStreamingRef = useRef(false);
+  const lastMessageLengthRef = useRef(0);
+  const prevMessageCountRef = useRef(0);
 
-  // Debug: Log when messages change
+  // 检测用户是否手动滚动
   useEffect(() => {
-    console.log('ChatMessages: messages updated', messages.length, 'messages');
-    console.log('Last message:', messages[messages.length - 1]);
-  }, [messages]);
+    const container = containerRef.current;
+    if (!container) return;
 
-  // Auto-scroll to bottom when new messages arrive
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+
+      // 只在用户手动向上滚动时标记（从不触底变为不触底）
+      if (!isAtBottom && isUserScrolledRef.current === false) {
+        isUserScrolledRef.current = true;
+      }
+      // 如果用户手动滚回底部，恢复自动跟随
+      if (isAtBottom && isUserScrolledRef.current === true) {
+        isUserScrolledRef.current = false;
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // 滚动到底部函数
+  const scrollToBottom = useCallback((smooth: boolean = false) => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
+  }, []);
+
+  // 初始化时滚动到底部
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isStreaming]);
+    scrollToBottom(false);
+  }, []);
+
+  // 智能滚动逻辑
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    const currentLength = lastMessage?.content?.length || 0;
+    const messageCount = messages.length;
+
+    // 检测流式状态变化：从 true 变为 false（对话结束）
+    const streamingJustEnded = prevIsStreamingRef.current && !isStreaming;
+    prevIsStreamingRef.current = isStreaming;
+
+    // 检测是否有新消息（消息数量增加，说明用户发送了新消息）
+    const hasNewMessage = messageCount > prevMessageCountRef.current;
+    prevMessageCountRef.current = messageCount;
+
+    if (hasNewMessage || streamingJustEnded) {
+      // 用户发送消息或对话结束时，无论用户在哪里，都平滑滚动到底部
+      scrollToBottom(true);
+      isUserScrolledRef.current = false;
+      lastMessageLengthRef.current = 0;
+    } else if (isStreaming) {
+      // 流式传输中：只在用户未滚动时跟随
+      if (currentLength > lastMessageLengthRef.current && !isUserScrolledRef.current) {
+        scrollToBottom(false);
+      }
+      lastMessageLengthRef.current = currentLength;
+    } else if (currentLength > lastMessageLengthRef.current) {
+      // 非流式但有内容增长（如加载历史消息时）
+      scrollToBottom(true);
+      lastMessageLengthRef.current = currentLength;
+    }
+  }, [messages, isStreaming, scrollToBottom]);
 
   if (messages.length === 0) {
     return (
@@ -78,8 +141,14 @@ function MessageBubble({ message, isStreaming }: { message: Message; isStreaming
           )}
         </div>
 
-        {/* Message content */}
-        <div className={cn('rounded-2xl px-4 py-3', isUser ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-secondary text-secondary-foreground rounded-bl-sm')}>
+        {/* Message content - 为流式消息添加平滑过渡 */}
+        <div
+          className={cn(
+            'rounded-2xl px-4 py-3',
+            isUser ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-secondary text-secondary-foreground rounded-bl-sm',
+            isStreaming && !isUser && 'transition-all duration-75 ease-out'
+          )}
+        >
           {isUser ? (
             <p className="whitespace-pre-wrap break-words">{message.content}</p>
           ) : (
