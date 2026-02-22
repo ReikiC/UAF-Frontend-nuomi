@@ -1,5 +1,9 @@
 import { useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Message } from '@/types/chat.types';
 import { cn } from '@/utils';
 
@@ -151,7 +155,78 @@ function MessageBubble({ message, isStreaming }: { message: Message; isStreaming
               )}
               {/* Message content */}
               <div className="markdown-content prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown>{message.content + (isStreaming ? '▌' : '')}</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  skipHtml={false}
+                  components={{
+                    code({ node, inline, className, children, ...props }: any) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const isDark = document.documentElement.classList.contains('dark');
+                      return !inline && match ? (
+                        <SyntaxHighlighter
+                          style={isDark ? oneDark : oneLight}
+                          language={match[1]}
+                          PreTag="div"
+                          className="rounded-lg text-sm"
+                          customStyle={{
+                            margin: '1rem 0',
+                            background: isDark ? '#2d2d2d' : '#f8f9fa',
+                          }}
+                        >
+                          {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                    table({ children, node }: any) {
+                      return (
+                        <div className="my-4 overflow-x-auto">
+                          <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                            {children}
+                          </table>
+                        </div>
+                      );
+                    },
+                    thead({ children, node }: any) {
+                      return (
+                        <thead style={{ background: '#f1f3f4' }}>
+                          {children}
+                        </thead>
+                      );
+                    },
+                    th({ children, node }: any) {
+                      return (
+                        <th style={{
+                          border: '1px solid #dadce0',
+                          padding: '8px 12px',
+                          textAlign: 'left',
+                          fontWeight: 500
+                        }}>
+                          {children}
+                        </th>
+                      );
+                    },
+                    td({ children, node }: any) {
+                      return (
+                        <td style={{
+                          border: '1px solid #dadce0',
+                          padding: '8px 12px',
+                          textAlign: 'left'
+                        }}>
+                          {children}
+                        </td>
+                      );
+                    },
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+                {isStreaming && (
+                  <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse align-middle" />
+                )}
               </div>
             </>
           )}

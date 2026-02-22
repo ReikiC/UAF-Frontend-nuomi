@@ -102,16 +102,69 @@
   @apply prose prose-slate dark:prose-invert max-w-none;
 }
 
+/* Override prose table styles */
+.markdown-content thead {
+  border-color: hsl(var(--border));
+}
+
+.markdown-content tbody {
+  border-color: hsl(var(--border));
+}
+
+/* Code blocks with distinct styling - similar to your HTML demo */
 .markdown-content pre {
-  @apply bg-muted rounded-lg p-4 overflow-x-auto;
+  @apply rounded-lg p-4 overflow-x-auto border border-border shadow-sm;
+  background: #f8f9fa;
+}
+
+.dark .markdown-content pre {
+  background: #2d2d2d;
+  border-color: #404040;
 }
 
 .markdown-content code {
   @apply bg-muted px-1.5 py-0.5 rounded text-sm;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 }
 
 .markdown-content pre code {
-  @apply bg-transparent p-0;
+  @apply bg-transparent p-0 text-sm;
+  color: #24292e;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+.dark .markdown-content pre code {
+  color: #e6edf3;
+}
+
+/* Tables with better borders and visibility - matching HTML demo */
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+}
+
+.markdown-content thead {
+  background: #f1f3f4;
+}
+
+.dark .markdown-content thead {
+  background: #2a2a2a;
+}
+
+.markdown-content th {
+  border: 1px solid hsl(var(--border));
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+
+.markdown-content td {
+  border: 1px solid hsl(var(--border));
+  padding: 8px 12px;
+  text-align: left;
+  color: hsl(var(--muted-foreground));
 }
 
 .markdown-content p:first-child {
