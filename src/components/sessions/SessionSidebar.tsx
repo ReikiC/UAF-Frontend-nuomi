@@ -1,27 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { chatStore } from '@/stores/chat.store';
+import { authStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 import type { SessionListItem } from '@/types/api.types';
 
 export function SessionSidebar() {
-  const [sessions, setSessions] = useState<SessionListItem[]>([]);
-  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
   const navigate = useNavigate();
 
+  // Subscribe to chatStore sessions
+  const sessions = chatStore((state) => state.sessions);
+  const loading = chatStore((state) => state.sessionsLoading);
+
   const loadSessions = async () => {
-    setLoading(true);
-    try {
-      const { sessionsService } = await import('@/services/sessions.service');
-      const response = await sessionsService.listSessions(50, 0);
-      setSessions(response.sessions);
-    } catch (error) {
-      console.error('Failed to load sessions:', error);
-    } finally {
-      setLoading(false);
-    }
+    await chatStore.getState().loadSessions();
   };
 
   useEffect(() => {
@@ -30,10 +24,8 @@ export function SessionSidebar() {
 
   const handleCreateSession = async () => {
     try {
-      const { sessionsService } = await import('@/services/sessions.service');
-      const session = await sessionsService.createSession({ title: '新对话' });
-      setSessions((prev) => [session, ...prev]);
-      navigate(`/chat/${session.id}`);
+      const sessionId = await chatStore.getState().createSession('新对话');
+      navigate(`/chat/${sessionId}`);
     } catch (error) {
       console.error('Failed to create session:', error);
     }
@@ -43,9 +35,7 @@ export function SessionSidebar() {
     e.preventDefault();
     e.stopPropagation();
     try {
-      const { sessionsService } = await import('@/services/sessions.service');
-      await sessionsService.deleteSession(sessionId);
-      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      await chatStore.getState().deleteSession(sessionId);
     } catch (error) {
       console.error('Failed to delete session:', error);
     }
@@ -113,6 +103,36 @@ export function SessionSidebar() {
               ))}
             </ul>
           )}
+        </div>
+
+        {/* User card - 类似 Claude */}
+        <div className="p-3 border-t">
+          <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent transition-colors cursor-pointer group">
+            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
+              {authStore.getState().user?.name?.[0]?.toUpperCase() ||
+               authStore.getState().user?.email?.[0]?.toUpperCase() || 'U'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                {authStore.getState().user?.name || '用户'}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {authStore.getState().user?.email || ''}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                authStore.getState().logout();
+                navigate('/login');
+              }}
+              className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-destructive/10 hover:text-destructive rounded"
+              title="登出"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3-3m-3 3h12.75" />
+              </svg>
+            </button>
+          </div>
         </div>
       </aside>
     </>

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { chatStore } from '@/stores/chat.store';
-import { authStore } from '@/stores/auth.store';
 import { useChat } from '@/hooks/useChat';
 import { ChatMessages } from '@/components/chat/ChatMessages';
 import { ChatInput } from '@/components/chat/ChatInput';
@@ -15,16 +14,58 @@ export function ChatPage() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentSessionTitle, setCurrentSessionTitle] = useState<string>('');
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
 
   const { sendMessage, cancelTask, continueTask, isStreaming, taskStatus } = useChat();
 
-  // Load session data when sessionId changes
+  // Load sessions on mount
   useEffect(() => {
-    if (sessionId) {
-      chatStore.setState({ currentSessionId: sessionId });
-      loadSessionMessages(sessionId);
-    }
-  }, [sessionId]);
+    chatStore.getState().loadSessions().then(() => {
+      setSessionsLoaded(true);
+    });
+  }, []);
+
+  // Initialize or load session
+  useEffect(() => {
+    const initializeSession = async () => {
+      // If we have a sessionId in URL, load it
+      if (sessionId) {
+        chatStore.setState({ currentSessionId: sessionId });
+        loadSessionMessages(sessionId);
+        return;
+      }
+
+      // Wait for sessions to be loaded
+      if (!sessionsLoaded) {
+        return;
+      }
+
+      // If no sessionId, check if there are any existing sessions
+      const state = chatStore.getState();
+
+      if (state.sessions.length > 0) {
+        // User has existing sessions, navigate to the most recent one
+        const mostRecentSession = state.sessions[0];
+        navigate(`/chat/${mostRecentSession.id}`, { replace: true });
+      } else {
+        // No sessions exist, create a default one for new users
+        try {
+          const defaultSession = await sessionsService.createSession({
+            title: 'Start with Nuomi',
+          });
+          chatStore.setState({
+            currentSessionId: defaultSession.id,
+            sessions: [defaultSession],
+          });
+          navigate(`/chat/${defaultSession.id}`, { replace: true });
+        } catch (error) {
+          console.error('Failed to create default session:', error);
+        }
+      }
+    };
+
+    initializeSession();
+  }, [sessionId, navigate, sessionsLoaded]);
 
   const loadSessionMessages = async (id: string) => {
     try {
@@ -86,17 +127,6 @@ export function ChatPage() {
     }
   };
 
-  const handleNewChat = async () => {
-    chatStore.setState({ currentSessionId: null, messages: [] });
-    setCurrentSessionTitle('');
-    navigate('/');
-  };
-
-  const handleLogout = () => {
-    authStore.getState().logout();
-    navigate('/login');
-  };
-
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
@@ -120,20 +150,6 @@ export function ChatPage() {
             <h1 className="font-semibold text-lg">
               {currentSessionTitle || 'Universal Agent'}
             </h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleNewChat}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 mr-2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              新对话
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleLogout} title="登出">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3-3m-3 3h12.75" />
-              </svg>
-            </Button>
           </div>
         </header>
 
