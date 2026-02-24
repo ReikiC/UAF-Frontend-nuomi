@@ -12,7 +12,7 @@ import { sessionsService } from '@/services/sessions.service';
 export function ChatPage() {
   const { sessionId } = useParams<{ sessionId?: string }>();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // 移动端默认隐藏侧边栏
   const [currentSessionTitle, setCurrentSessionTitle] = useState<string>('');
   const [sessionsLoaded, setSessionsLoaded] = useState(false);
 
@@ -130,7 +130,7 @@ export function ChatPage() {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
-      <SessionSidebar />
+      <SessionSidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { chatStore } from '@/stores/chat.store';
 import { authStore } from '@/stores/auth.store';
@@ -7,8 +7,12 @@ import { cn } from '@/utils/cn';
 import { formatSessionTime } from '@/utils/time';
 import type { SessionListItem } from '@/types/api.types';
 
-export function SessionSidebar() {
-  const [open, setOpen] = useState(true);
+interface SessionSidebarProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function SessionSidebar({ open = true, onOpenChange }: SessionSidebarProps) {
   const navigate = useNavigate();
 
   // Subscribe to chatStore sessions
@@ -48,7 +52,7 @@ export function SessionSidebar() {
       {open && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setOpen(false)}
+          onClick={() => onOpenChange?.(false)}
         />
       )}
 
@@ -68,7 +72,7 @@ export function SessionSidebar() {
               variant="ghost"
               size="icon"
               className="lg:hidden"
-              onClick={() => setOpen(false)}
+              onClick={() => onOpenChange?.(false)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
