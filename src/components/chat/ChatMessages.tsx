@@ -312,7 +312,7 @@ function MessageBubble({ message, isStreaming }: { message: Message; isStreaming
                         </code>
                       );
                     },
-                    table({ children, node }: any) {
+                    table({ children }: any) {
                       return (
                         <div className="my-4 overflow-x-auto">
                           <table style={{ borderCollapse: 'collapse', width: '100%' }}>
@@ -321,14 +321,14 @@ function MessageBubble({ message, isStreaming }: { message: Message; isStreaming
                         </div>
                       );
                     },
-                    thead({ children, node }: any) {
+                    thead({ children }: any) {
                       return (
                         <thead style={{ background: '#f1f3f4' }}>
                           {children}
                         </thead>
                       );
                     },
-                    th({ children, node }: any) {
+                    th({ children }: any) {
                       return (
                         <th style={{
                           border: '1px solid #dadce0',
@@ -340,7 +340,7 @@ function MessageBubble({ message, isStreaming }: { message: Message; isStreaming
                         </th>
                       );
                     },
-                    td({ children, node }: any) {
+                    td({ children }: any) {
                       return (
                         <td style={{
                           border: '1px solid #dadce0',
