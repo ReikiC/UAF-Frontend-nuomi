@@ -6,6 +6,7 @@ import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Message } from '@/types/chat.types';
 import { cn } from '@/utils';
+import { formatBeijingTime } from '@/utils/time';
 
 interface ChatMessagesProps {
   messages: Message[];
@@ -362,28 +363,10 @@ function MessageBubble({ message, isStreaming }: { message: Message; isStreaming
             </>
           )}
           <p className={cn('text-xs mt-1 opacity-70', isUser ? 'text-primary-foreground' : 'text-secondary-foreground')}>
-            {formatTime(message.created_at)}
+            {formatBeijingTime(message.created_at)}
           </p>
         </div>
       </div>
     </div>
   );
-}
-
-// Helper function to format time
-function formatTime(timestamp: string): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-
-  if (diff < 60000) return '刚刚';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
-
-  return date.toLocaleDateString('zh-CN', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }

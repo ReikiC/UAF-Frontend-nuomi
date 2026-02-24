@@ -4,6 +4,7 @@ import { chatStore } from '@/stores/chat.store';
 import { authStore } from '@/stores/auth.store';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
+import { formatSessionTime } from '@/utils/time';
 import type { SessionListItem } from '@/types/api.types';
 
 export function SessionSidebar() {
@@ -167,12 +168,7 @@ function SessionItem({
                 </p>
               )}
               <p className="text-xs text-muted-foreground mt-1">
-                {new Date(session.updated_at).toLocaleDateString('zh-CN', {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+                {formatSessionTime(session.updated_at)}
               </p>
             </div>
 
