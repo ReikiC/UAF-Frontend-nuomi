@@ -1,4 +1,4 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 export const CHAT_ENDPOINTS = {
   BASIC: '/api/v1/chat/basic',

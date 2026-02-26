@@ -59,7 +59,7 @@ export function useChat() {
         }
 
         // Build URL
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const baseUrl = import.meta.env.VITE_API_URL ?? '';
         const url = `${baseUrl}/api/v1/chat/single/toolcalls/stream/v2`;
 
         // Send the message

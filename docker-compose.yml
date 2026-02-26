@@ -5,14 +5,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: uaf-frontend
     ports:
-      - "3000:80"
+      - "1145:80"  # 映射到主机 1145 端口
     environment:
-      - VITE_API_URL=http://localhost:8000
+      # 使用容器服务名连接后端，而非 localhost
+      - VITE_API_URL=http://app:8000
     restart: unless-stopped
     networks:
-      - nuomi-network
+      - uaf-network
 
 networks:
-  nuomi-network:
-    driver: bridge
+  uaf-network:
+    external: true
+    name: uaf-network

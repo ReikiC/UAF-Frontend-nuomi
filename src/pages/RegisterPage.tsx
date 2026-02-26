@@ -24,8 +24,8 @@ export function RegisterPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('密码长度至少为 6 位');
+    if (password.length < 8) {
+      setError('密码长度至少为 8 位');
       return;
     }
 
@@ -104,7 +104,7 @@ export function RegisterPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="至少 6 位"
+                placeholder="至少 8 位"
                 required
                 disabled={isLoading}
                 className="w-full"
