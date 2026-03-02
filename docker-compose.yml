@@ -9,8 +9,8 @@ services:
     ports:
       - "1145:80"  # 映射到主机 1145 端口
     environment:
-      # 使用容器服务名连接后端，而非 localhost
-      - VITE_API_URL=http://app:8000
+      # 留空，让前端使用相对路径 /api，通过 Nginx 代理访问后端
+      - VITE_API_URL=
     restart: unless-stopped
     networks:
       - uaf-network
