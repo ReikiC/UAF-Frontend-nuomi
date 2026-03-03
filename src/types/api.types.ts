@@ -102,6 +102,7 @@ export interface ChatRequest {
   message: string;
   session_id?: string;
   stream?: boolean;
+  enabled_mcps?: string[] | null;
 }
 
 // SSE Events
@@ -148,6 +149,7 @@ export interface ToolInfo {
 
 export interface MCPServerInfo {
   name: string;
+  display_name?: string;
   transport?: string;
   command?: string;
   url?: string;

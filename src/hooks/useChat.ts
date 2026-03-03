@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { chatStore } from '@/stores/chat.store';
+import { mcpStore } from '@/stores/mcp.store';
 import { tasksService } from '@/services/tasks.service';
 import { useSSE } from './useSSE';
 import type { Message } from '@/types/chat.types';
@@ -47,10 +48,20 @@ export function useChat() {
 
       try {
         // Prepare request
+        const selectedServers = mcpStore.getState().selectedServers;
         const requestBody = {
           message,
           session_id: sessionId || state.currentSessionId || undefined,
+          enabled_mcps: selectedServers.length > 0 ? selectedServers : undefined,
         };
+
+        // Debug logging
+        console.log('[useChat] Sending message with:', {
+          message,
+          selectedServers,
+          enabled_mcps: requestBody.enabled_mcps,
+          fullBody: requestBody,
+        });
 
         // Get token
         const token = localStorage.getItem('access_token');

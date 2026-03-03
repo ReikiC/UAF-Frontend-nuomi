@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { chatStore } from '@/stores/chat.store';
+import { mcpStore } from '@/stores/mcp.store';
 import { useChat } from '@/hooks/useChat';
 import { ChatMessages } from '@/components/chat/ChatMessages';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { TaskControls } from '@/components/chat/TaskControls';
 import { SessionSidebar } from '@/components/sessions/SessionSidebar';
+import { MCPAbilitySelector } from '@/components/mcp/MCPAbilitySelector';
 import { Button } from '@/components/ui/button';
 import { sessionsService } from '@/services/sessions.service';
 
@@ -23,6 +25,11 @@ export function ChatPage() {
     chatStore.getState().loadSessions().then(() => {
       setSessionsLoaded(true);
     });
+  }, []);
+
+  // Load MCP servers on mount
+  useEffect(() => {
+    mcpStore.getState().loadServers();
   }, []);
 
   // Initialize or load session
@@ -168,6 +175,9 @@ export function ChatPage() {
             onContinue={continueTask}
           />
         </div>
+
+        {/* MCP Ability Selector */}
+        <MCPAbilitySelector disabled={isStreaming} />
 
         {/* Input area */}
         <ChatInput
