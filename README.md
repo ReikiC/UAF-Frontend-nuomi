@@ -23,6 +23,25 @@ Universal Agent Framework 的前端界面 - 基于 React + TypeScript + Vite 构
 - **Tailwind CSS** - 样式框架
 - **React Markdown** - Markdown 渲染
 
+## 相关项目
+
+### 核心组件
+
+| 项目 | 说明 | 地址 |
+|------|------|------|
+| **UAF-Orchestrator** | Agent 编排框架（LangChain + LangGraph） | [https://github.com/ReikiC/UAF-Orchestrator](https://github.com/ReikiC/UAF-Orchestrator) |
+| **UAF-Frontend-nuomi** | 前端界面（React + TypeScript + Vite） | [https://github.com/ReikiC/UAF-Frontend-nuomi](https://github.com/ReikiC/UAF-Frontend-nuomi) |
+| **UAF-Data-Base** | PostgreSQL 数据库配置 | [https://github.com/ReikiC/UAF-Data-Base](https://github.com/ReikiC/UAF-Data-Base) |
+
+### RAG 业务模块
+
+| 项目 | 说明 | 地址 |
+|------|------|------|
+| **UAF-MCP-RAG-Frontend** | 知识库前端界面 | [https://github.com/ReikiC/UAF-MCP-RAG-Frontend](https://github.com/ReikiC/UAF-MCP-RAG-Frontend) |
+| **UAF-MCP-RAG-Server** | RAG 后端服务（MCP 协议） | [https://github.com/ReikiC/UAF-MCP-RAG-Server](https://github.com/ReikiC/UAF-MCP-RAG-Server) |
+| **UAF-MCP-RAG-DB** | RAG 向量数据库支持 | [https://github.com/ReikiC/UAF-MCP-RAG-DB](https://github.com/ReikiC/UAF-MCP-RAG-DB) |
+
+
 ## 快速开始
 
 ### 1. 安装依赖
@@ -139,18 +158,6 @@ src/
 
 - 全局样式：`src/styles/globals.css`
 - Tailwind 配置：`tailwind.config.js`
-
-## 相关项目
-
-### 核心组件
-- **[UAF-Orchestrator](https://github.com/ReikiC/UAF-Orchestrator)** - 基于 LangChain + LangGraph 的 Agent 编排框架
-- **[Universal-Agent-Backend](https://github.com/ReikiC/Universal-Agent-Backend)** - 后端 API 服务
-- **[UAF-Data-Base](https://github.com/ReikiC/UAF-Data-Base)** - PostgreSQL 数据库配置
-
-### RAG 业务模块
-- **[UAF-MCP-RAG-Frontend](https://github.com/ReikiC/UAF-MCP-RAG-Frontend)** - 知识库前端界面（对应 UAF 前端的"知识库"功能）
-- **[UAF-MCP-RAG-Server](https://github.com/ReikiC/UAF-MCP-RAG-Server)** - RAG 后端服务（通过 MCP 为 UAF 提供智能知识库查询）
-- **[UAF-MCP-RAG-DB](https://github.com/ReikiC/UAF-MCP-RAG-DB)** - RAG 向量数据库支持
 
 ## 许可证
 
