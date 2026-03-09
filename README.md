@@ -142,8 +142,15 @@ src/
 
 ## 相关项目
 
-- **[Universal-Agent-Backend](https://github.com/ReikiC/Universal-Agent-Backend)** - 后端 API
-- **[UAF-Data-Base](https://github.com/ReikiC/UAF-Data-Base)** - 数据库配置
+### 核心组件
+- **[UAF-Orchestrator](https://github.com/ReikiC/UAF-Orchestrator)** - 基于 LangChain + LangGraph 的 Agent 编排框架
+- **[Universal-Agent-Backend](https://github.com/ReikiC/Universal-Agent-Backend)** - 后端 API 服务
+- **[UAF-Data-Base](https://github.com/ReikiC/UAF-Data-Base)** - PostgreSQL 数据库配置
+
+### RAG 业务模块
+- **[UAF-MCP-RAG-Frontend](https://github.com/ReikiC/UAF-MCP-RAG-Frontend)** - 知识库前端界面（对应 UAF 前端的"知识库"功能）
+- **[UAF-MCP-RAG-Server](https://github.com/ReikiC/UAF-MCP-RAG-Server)** - RAG 后端服务（通过 MCP 为 UAF 提供智能知识库查询）
+- **[UAF-MCP-RAG-DB](https://github.com/ReikiC/UAF-MCP-RAG-DB)** - RAG 向量数据库支持
 
 ## 许可证
 
