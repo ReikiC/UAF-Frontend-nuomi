@@ -1,12 +1,25 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Message } from '@/types/chat.types';
 import { cn } from '@/utils';
 import { formatBeijingTime } from '@/utils/time';
+
+/**
+ * Ensure $$ delimiters are on their own lines so remark-math's
+ * micromark math-flow construct can properly open/close blocks.
+ */
+function preprocessBlockMath(content: string): string {
+  return content.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
+    return `\n\n$$\n${math.trim()}\n$$\n\n`;
+  });
+}
 
 interface ChatMessagesProps {
   messages: Message[];
@@ -269,7 +282,8 @@ function MessageBubble({ message, isStreaming }: { message: Message; isStreaming
               {/* Message content */}
               <div className="markdown-content prose prose-sm dark:prose-invert max-w-none">
                 <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
+                  remarkPlugins={[remarkMath, remarkGfm]}
+                  rehypePlugins={[rehypeKatex]}
                   skipHtml={false}
                   components={{
                     code({ node, inline, className, children, ...props }: any) {
@@ -354,7 +368,7 @@ function MessageBubble({ message, isStreaming }: { message: Message; isStreaming
                     },
                   }}
                 >
-                  {message.content}
+                  {preprocessBlockMath(message.content)}
                 </ReactMarkdown>
                 {isStreaming && (
                   <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse align-middle" />
